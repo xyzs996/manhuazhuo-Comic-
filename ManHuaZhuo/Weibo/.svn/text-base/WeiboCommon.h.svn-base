@@ -1,0 +1,77 @@
+
+
+#import <Foundation/Foundation.h>
+
+enum WeiboId{
+    Weibo_Sina = 1,
+    Weibo_Tencent = 2,
+    Weibo_Netease = 4,
+    Weibo_Sohu = 8,
+    Weibo_Max
+};
+
+#define PublishMessageResultNotification          @"PublishMessageResultNotification"
+#define PublishMessageBeginNotification           @"PublishMessageBeginNotification"
+#define RefreshDataWhenUidNotNullNotification     @"RefreshDataWhenUidNotNullNotification"
+
+
+#define KEY_NETEASE @"Re8tAPDRmWbOhFjm"
+#define SECRETKEY_NETEASE  @"CMVKfxWUmdMJyfGjjeLbfy4RCWTeUhIn"
+#define KEY_SOHU    @"bo7gVun0Z1sqaExsVi2r"
+#define SECRETKEY_SOHU   @"*4=R=w#5cMi3^vkDfqTVKFbs5DrGm9Q^gfbY-mih"
+#define KEY_TENCENT	@"801110582"
+#define SECRETKEY_TENCENT	@"cf45ab5a55c87ff13dfa20f530bde3ec"
+#define KEY_SINA	@"1173973511"
+#define SECRETKEY_SINA	@"7709897909859c00861a8481added6bb"
+
+
+@interface WeiboCommon : NSObject {
+    
+}
+/*
+ 根据blogid来保存字典信息
+ */
++ (void)saveWeiboInfo:(NSDictionary *)parars blogId:(NSUInteger)blogid;
+/*
+ 保存blogid的username，以方便授权成功时获取个人信息和每次发微博时更新姓名
+ */
++ (void)saveWeiboName:(NSString *)name blogId:(NSInteger)blogid;
+/*
+ 删除bloid的信息
+ */
++ (void)deleteWeiboInfo:(NSUInteger)blogid;
+/*
+ 检查该微博是否已绑定
+ */
++ (BOOL)checkHasBindingById:(NSUInteger)blogId;
+/*
+ 得到微博的所有保存信息，包括oauth_key、oauth_secret、可能存在name
+ */
++ (NSDictionary*)getBlogInfo:(NSInteger)blogId;
+/*
+ 得到微博对应的姓名，如果存在，返回姓名。不存在返回oauth_key（因为后面有用姓名来判断是否已绑定的逻辑）
+ */
++ (NSString *)getUserNameWithId:(NSInteger)blogId;
+/*
+ 设置微博是否开启
+ */
++ (void)setWeiboEnableWithWeiboId:(NSInteger)weiboId andStatus:(BOOL)isEnabled;
+/*
+ 得到微博是否开启
+ */
++ (BOOL)getWeiboEnabledWithWeiboId:(NSInteger)weiboId;
+/*
+ 加载微博信息，该数组里保存的是字典，内容包括name 和 enable
+ */
++ (NSArray*)loadWeiboInfo;
+/*
+ 加载已绑定的微博信息，该数组内容是字典，包括name和weiboid
+ */
++ (NSArray*)loadAuthorizedWeiboInfo;
+/*
+ 发送消息
+ */
+//+ (BOOL)publishMessage:(NSString *)content;
+
+@end
+

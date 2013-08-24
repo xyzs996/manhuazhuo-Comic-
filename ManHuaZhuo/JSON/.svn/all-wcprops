@@ -1,0 +1,83 @@
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/appcake2/!svn/ver/102/AppCake2/Classes/FBConnect/JSON
+END
+JSON.h
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/appcake2/!svn/ver/102/AppCake2/Classes/FBConnect/JSON/JSON.h
+END
+SBJsonBase.h
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/appcake2/!svn/ver/102/AppCake2/Classes/FBConnect/JSON/SBJsonBase.h
+END
+SBJsonParser.h
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/appcake2/!svn/ver/102/AppCake2/Classes/FBConnect/JSON/SBJsonParser.h
+END
+SBJsonWriter.h
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/appcake2/!svn/ver/102/AppCake2/Classes/FBConnect/JSON/SBJsonWriter.h
+END
+SBJSON.h
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/appcake2/!svn/ver/102/AppCake2/Classes/FBConnect/JSON/SBJSON.h
+END
+SBJsonBase.m
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/appcake2/!svn/ver/102/AppCake2/Classes/FBConnect/JSON/SBJsonBase.m
+END
+SBJsonParser.m
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/appcake2/!svn/ver/102/AppCake2/Classes/FBConnect/JSON/SBJsonParser.m
+END
+SBJsonWriter.m
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/appcake2/!svn/ver/102/AppCake2/Classes/FBConnect/JSON/SBJsonWriter.m
+END
+NSObject+SBJSON.h
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/appcake2/!svn/ver/102/AppCake2/Classes/FBConnect/JSON/NSObject+SBJSON.h
+END
+NSString+SBJSON.h
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/appcake2/!svn/ver/102/AppCake2/Classes/FBConnect/JSON/NSString+SBJSON.h
+END
+SBJSON.m
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/appcake2/!svn/ver/102/AppCake2/Classes/FBConnect/JSON/SBJSON.m
+END
+NSObject+SBJSON.m
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/appcake2/!svn/ver/102/AppCake2/Classes/FBConnect/JSON/NSObject+SBJSON.m
+END
+NSString+SBJSON.m
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/appcake2/!svn/ver/102/AppCake2/Classes/FBConnect/JSON/NSString+SBJSON.m
+END

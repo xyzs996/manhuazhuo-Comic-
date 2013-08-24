@@ -1,0 +1,137 @@
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/TGBus_IOS/!svn/ver/385/%E5%B7%B4%E5%A3%AB%E5%95%86%E5%BA%97/ASIHTTPRequest
+END
+ASIHTTPRequest.m
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/TGBus_IOS/!svn/ver/385/%E5%B7%B4%E5%A3%AB%E5%95%86%E5%BA%97/ASIHTTPRequest/ASIHTTPRequest.m
+END
+ASICacheDelegate.h
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/TGBus_IOS/!svn/ver/385/%E5%B7%B4%E5%A3%AB%E5%95%86%E5%BA%97/ASIHTTPRequest/ASICacheDelegate.h
+END
+ASINetworkQueue.h
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/TGBus_IOS/!svn/ver/385/%E5%B7%B4%E5%A3%AB%E5%95%86%E5%BA%97/ASIHTTPRequest/ASINetworkQueue.h
+END
+ASIDataDecompressor.h
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/TGBus_IOS/!svn/ver/385/%E5%B7%B4%E5%A3%AB%E5%95%86%E5%BA%97/ASIHTTPRequest/ASIDataDecompressor.h
+END
+ASIAuthenticationDialog.h
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/svn/TGBus_IOS/!svn/ver/385/%E5%B7%B4%E5%A3%AB%E5%95%86%E5%BA%97/ASIHTTPRequest/ASIAuthenticationDialog.h
+END
+ASIProgressDelegate.h
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/TGBus_IOS/!svn/ver/373/%E5%B7%B4%E5%A3%AB%E5%95%86%E5%BA%97/ASIHTTPRequest/ASIProgressDelegate.h
+END
+ASIDownloadCache.m
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/TGBus_IOS/!svn/ver/385/%E5%B7%B4%E5%A3%AB%E5%95%86%E5%BA%97/ASIHTTPRequest/ASIDownloadCache.m
+END
+ASINetworkQueue.m
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/TGBus_IOS/!svn/ver/385/%E5%B7%B4%E5%A3%AB%E5%95%86%E5%BA%97/ASIHTTPRequest/ASINetworkQueue.m
+END
+Reachability.h
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/TGBus_IOS/!svn/ver/385/%E5%B7%B4%E5%A3%AB%E5%95%86%E5%BA%97/ASIHTTPRequest/Reachability.h
+END
+ASIDataDecompressor.m
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/TGBus_IOS/!svn/ver/385/%E5%B7%B4%E5%A3%AB%E5%95%86%E5%BA%97/ASIHTTPRequest/ASIDataDecompressor.m
+END
+ASIAuthenticationDialog.m
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/svn/TGBus_IOS/!svn/ver/385/%E5%B7%B4%E5%A3%AB%E5%95%86%E5%BA%97/ASIHTTPRequest/ASIAuthenticationDialog.m
+END
+ASIFormDataRequest.h
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/TGBus_IOS/!svn/ver/385/%E5%B7%B4%E5%A3%AB%E5%95%86%E5%BA%97/ASIHTTPRequest/ASIFormDataRequest.h
+END
+Reachability.m
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/TGBus_IOS/!svn/ver/385/%E5%B7%B4%E5%A3%AB%E5%95%86%E5%BA%97/ASIHTTPRequest/Reachability.m
+END
+ASIInputStream.h
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/TGBus_IOS/!svn/ver/373/%E5%B7%B4%E5%A3%AB%E5%95%86%E5%BA%97/ASIHTTPRequest/ASIInputStream.h
+END
+ASIFormDataRequest.m
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/TGBus_IOS/!svn/ver/385/%E5%B7%B4%E5%A3%AB%E5%95%86%E5%BA%97/ASIHTTPRequest/ASIFormDataRequest.m
+END
+ASIHTTPRequestConfig.h
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/TGBus_IOS/!svn/ver/385/%E5%B7%B4%E5%A3%AB%E5%95%86%E5%BA%97/ASIHTTPRequest/ASIHTTPRequestConfig.h
+END
+ASIInputStream.m
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/TGBus_IOS/!svn/ver/385/%E5%B7%B4%E5%A3%AB%E5%95%86%E5%BA%97/ASIHTTPRequest/ASIInputStream.m
+END
+ASIHTTPRequestDelegate.h
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/svn/TGBus_IOS/!svn/ver/385/%E5%B7%B4%E5%A3%AB%E5%95%86%E5%BA%97/ASIHTTPRequest/ASIHTTPRequestDelegate.h
+END
+ASIDataCompressor.h
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/TGBus_IOS/!svn/ver/385/%E5%B7%B4%E5%A3%AB%E5%95%86%E5%BA%97/ASIHTTPRequest/ASIDataCompressor.h
+END
+ASIHTTPRequest.h
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/TGBus_IOS/!svn/ver/385/%E5%B7%B4%E5%A3%AB%E5%95%86%E5%BA%97/ASIHTTPRequest/ASIHTTPRequest.h
+END
+ASIDownloadCache.h
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/TGBus_IOS/!svn/ver/385/%E5%B7%B4%E5%A3%AB%E5%95%86%E5%BA%97/ASIHTTPRequest/ASIDownloadCache.h
+END
+ASIDataCompressor.m
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/TGBus_IOS/!svn/ver/385/%E5%B7%B4%E5%A3%AB%E5%95%86%E5%BA%97/ASIHTTPRequest/ASIDataCompressor.m
+END

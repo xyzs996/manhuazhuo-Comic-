@@ -1,0 +1,9 @@
+1.设置的more对象组织，新增清理图片缓存
+2.控制器继承baseview
+3.请求方式改为httpclient顺序逻辑
+4.替换了sdimage等待风火轮
+5.SectionDownloadManager和downloadViewController里的缓存队列改成了字典，读取新的section的状态，使用当前单例sectiondownloadmanager里的字典数据=====》调高解析速度
+6.修复本地阅读有进度条问题,点击未开始的直接结束，原因是没有获取该章节下的图片url
+7.下载委托通知改为消息通知，sectionlist添加下载状态通知
+8.修复分类下书籍点击右侧“完结”“连载中”刷新不归第0页的问题
+9.适配iphone5，浏览图片处显示时间

@@ -1,0 +1,721 @@
+
+
+enum RequestId {
+    GettingOauthToken,
+    GettingAccessToken,
+    GettingUserInfo,
+    PublishMessage
+};
+
+BOOL g_isSohuSharingPicture;
+
+#include "ifaddrs.h"
+#include "arpa/inet.h"
+#import "WeiboCommon.h"
+#import "WeiboCommonAPI.h"
+#import "NSURL+Additions.h"
+#import "JSON.h"
+#import "WeiboWrapper.h"
+
+@interface WeiboCommonAPI()
+- (NSInteger)getNextSendingId;
+@end
+
+@implementation WeiboCommonAPI
+@synthesize oauthKey;
+@synthesize connectionWeibo, dataReceive, currentWeiboId, delegate, numerousPublish;
+@synthesize stringFilePath, stringSendingContent, stringImageUrl;
+@synthesize userData;
+
+- (void)dealloc
+{
+    [oauthKey release];
+    
+    [self.connectionWeibo cancel];
+    self.connectionWeibo = nil;
+    //[self.connectionWeibo release];
+    [dataReceive release];
+    
+    [stringSendingContent release];
+    [stringFilePath release];
+    [stringImageUrl release];
+    
+    [super dealloc];
+}
+
+- (id)init
+{
+    self = [super init];
+    if (self) {
+        MicroBlogOauthKey *key = [[MicroBlogOauthKey alloc] init];
+        self.oauthKey = key;
+        [key release];
+    }
+    return self;
+}
+
+- (void)initAccessTokenWithBlogId:(enum WeiboId)weiboId
+{
+    NSDictionary *info = [WeiboCommon getBlogInfo:weiboId];
+    oauthKey.tokenKey = [info objectForKey:@"oauth_token"];
+    oauthKey.tokenSecret = [info objectForKey:@"oauth_token_secret"];
+    oauthKey.callbackUrl = nil;
+    switch (weiboId) {
+        case Weibo_Sina:
+            oauthKey.consumerKey = KEY_SINA;
+            oauthKey.consumerSecret = SECRETKEY_SINA;
+            break;
+        case Weibo_Tencent:
+            oauthKey.consumerKey = KEY_TENCENT;
+            oauthKey.consumerSecret = SECRETKEY_TENCENT;
+            break;
+        case Weibo_Netease:
+            oauthKey.consumerKey = KEY_NETEASE;
+            oauthKey.consumerSecret = SECRETKEY_NETEASE;
+            break;
+        case Weibo_Sohu:
+            oauthKey.consumerKey = KEY_SOHU;
+            oauthKey.consumerSecret = SECRETKEY_SOHU;
+            break;
+        default:
+            break;
+    }
+}
+
+//得到IP地址
+- (NSString *)getIPAddress {
+    
+    NSString *address = @"202.206.0.48";
+    struct ifaddrs *interfaces = NULL;
+    struct ifaddrs *temp_addr = NULL;
+    int success = 0;
+    // retrieve the current interfaces - returns 0 on success
+    success = getifaddrs(&interfaces);
+    if (success == 0) {
+        // Loop through linked list of interfaces
+        temp_addr = interfaces;
+        while(temp_addr != NULL) {
+            if(temp_addr->ifa_addr->sa_family == AF_INET) {
+                // Check if interface is en0 which is the wifi connection on the iPhone
+                if([[NSString stringWithUTF8String:temp_addr->ifa_name] isEqualToString:@"en0"]) {
+                    // Get NSString from C String
+                    address = [NSString stringWithUTF8String:inet_ntoa(((struct sockaddr_in *)temp_addr->ifa_addr)->sin_addr)];
+                    
+                }
+                
+            }
+            
+            temp_addr = temp_addr->ifa_next;
+        }
+    }
+    // Free memory
+    freeifaddrs(interfaces);
+    return address;
+}
+
+#pragma mark 得到OauthToken部分
+- (void)getOauthTokenWithWeiboId:(enum WeiboId)weiboId
+{
+    currentRequestId = GettingOauthToken;
+    currentWeiboId = weiboId;
+    NSString *url = nil;
+    NSString *method = @"GET";
+    
+    [self initAccessTokenWithBlogId:weiboId];
+    switch (weiboId) {
+        case Weibo_Sina:
+            url = @"http://api.t.sina.com.cn/oauth/request_token";
+            break;
+        case Weibo_Tencent:
+            url = @"https://open.t.qq.com/cgi-bin/request_token";
+            self.oauthKey.callbackUrl = @"http://wap.qq.com";
+            break;
+        case Weibo_Netease:
+            url = @"http://api.t.163.com/oauth/request_token";
+            break;
+        case Weibo_Sohu:
+            url = @"http://api.t.sohu.com/oauth/request_token";
+            break;
+        default:
+            break;
+    }
+    
+    self.connectionWeibo = [MicroBlogRequest asyncRequestWithUrl:url httpMethod:method oauthKey:oauthKey parameters:nil files:nil delegate:self];
+}
+
+- (void)notifyGetOauthTokenFailed
+{
+    if (delegate && [delegate respondsToSelector:@selector(getOauthTokenFailed:)]) {
+        [delegate getOauthTokenFailed:self];
+    }
+}
+
+- (void)notifyGetOauthTokenSuccessWithOauthToken:(NSString *)oauthToken andOauthTokenSecret:(NSString *)oauthTokenSecret
+{
+    if (self && [delegate respondsToSelector:@selector(getOauthTokenSuccess:andOauthToken:andOauthTokenSecret:)]) {
+        [delegate getOauthTokenSuccess:self andOauthToken:oauthToken andOauthTokenSecret:oauthTokenSecret];
+    }
+}
+
+/*
+ 处理得到的OauthToken数据
+ */
+- (void)processOauthTokenData
+{
+    NSString *string = [[NSString alloc ] initWithData:dataReceive encoding:NSUTF8StringEncoding];
+    //NSLog(@"%@", string);
+    NSDictionary *params = [NSURL parseURLQueryString:string];
+    NSString *oauthToken = [params objectForKey:@"oauth_token"];
+    NSString *oauthTokenSecret = [params objectForKey:@"oauth_token_secret"];
+    if (oauthToken && oauthTokenSecret) {
+        [self notifyGetOauthTokenSuccessWithOauthToken:oauthToken andOauthTokenSecret:oauthTokenSecret];
+    }else{
+        [self notifyGetOauthTokenFailed];
+    }
+    [string release];
+}
+
+#pragma mark 得到AccessToken和AccessTokenSecret
+- (void)getAccessTokenWithOauthToken:(NSString *)oauthToken andOauthTokenSecret:(NSString*)oauthTokenSecret andVerifier:(NSString*)verifier andBlogId:(enum WeiboId)weiboId
+{
+    currentRequestId = GettingAccessToken;
+    currentWeiboId = weiboId;
+    NSString *url = nil;
+    NSString *method = @"GET";
+    switch (weiboId) {
+        case Weibo_Sina:
+            url = @"http://api.t.sina.com.cn/oauth/access_token";
+            break;
+        case Weibo_Tencent:
+            url = @"https://open.t.qq.com/cgi-bin/access_token";
+            break;
+        case Weibo_Netease:
+            url = @"http://api.t.163.com/oauth/access_token";
+            break;
+        case Weibo_Sohu:
+            url = @"http://api.t.sohu.com/oauth/access_token";
+            break;
+        default:
+            break;
+    }
+    [self initAccessTokenWithBlogId:weiboId];
+    oauthKey.tokenKey = oauthToken;
+    oauthKey.tokenSecret = oauthTokenSecret;
+    oauthKey.verify = verifier;
+    self.connectionWeibo = [MicroBlogRequest asyncRequestWithUrl:url httpMethod:method oauthKey:oauthKey parameters:nil files:nil delegate:self];;
+}
+
+- (void)notifyGetAccessTokenFailed
+{
+    if (delegate && [delegate respondsToSelector:@selector(getAccessTokenFailed:)]) {
+        [delegate getAccessTokenFailed:self];
+    }
+}
+
+- (void)notifyGetAccessTokenSuccess
+{
+    if (delegate && [delegate respondsToSelector:@selector(getaccesstokenSuccess:)]) {
+        [delegate getaccesstokenSuccess:self];
+    }
+}
+
+- (void)processAccessTokenData
+{
+    //oauth_token=57ee50e49a43d45a4e54fcc079f4ebe6&oauth_token_secret=cf390cc3e9aae271fda670ea46aa61ca&user_id=2642554491
+    NSString *string = [[NSString alloc ] initWithData:dataReceive encoding:NSUTF8StringEncoding];
+    //NSLog(@"processAccessTokenData:%@", string);
+    NSDictionary *params = [NSURL parseURLQueryString:string];
+    if ([params objectForKey:@"oauth_token"]==nil || [params objectForKey:@"oauth_token_secret"]==nil) {
+        [self notifyGetAccessTokenFailed];
+    }else{
+        [WeiboCommon saveWeiboInfo:params blogId:currentWeiboId];
+        [self notifyGetAccessTokenSuccess];
+    }
+    [string release];
+}
+
+#pragma mark 获取用户信息
+- (void)getUserInfoWithWeiboId:(enum WeiboId)weiboId
+{
+    currentRequestId = GettingUserInfo;
+    currentWeiboId = weiboId;
+    NSString *url = nil;
+    NSString *user_id = nil;
+    NSDictionary *info = [WeiboCommon getBlogInfo:weiboId];
+    NSString *method = @"GET";
+    
+    [self initAccessTokenWithBlogId:weiboId];
+    NSMutableDictionary *parameters = [NSMutableDictionary dictionaryWithCapacity:1];
+    
+    switch (weiboId) {
+        case Weibo_Sina:
+            url = @"http://api.t.sina.com.cn/users/show.json";
+            user_id = [info objectForKey:@"user_id"];
+            [parameters setObject:user_id forKey:@"user_id"];
+            break;
+        case Weibo_Tencent:
+            url = @"http://open.t.qq.com/api/user/info";
+            [parameters setObject:@"json" forKey:@"format"];
+            break;
+        case Weibo_Netease:
+            url = @"http://api.t.163.com/users/show.json";
+            break;
+        case Weibo_Sohu:
+            url = @"http://api.t.sohu.com/users/show.json";
+            break;
+        default:
+            break;
+    }
+    
+    self.connectionWeibo = [MicroBlogRequest asyncRequestWithUrl:url httpMethod:method oauthKey:oauthKey parameters:parameters files:nil delegate:self];
+}
+
+- (void)notifyGetUserInfoFailed
+{
+    if (delegate && [delegate respondsToSelector:@selector(getUserInfoFailed:)]) {
+        [delegate getUserInfoFailed:self];
+    }
+}
+
+- (void)notifyGetuserInfoSuccess:(NSString *)userName
+{
+    if (delegate && [delegate respondsToSelector:@selector(getUserInfoSuccess:andUserName:)]) {
+        [delegate getUserInfoSuccess:self andUserName:userName];
+    }
+}
+
+- (void)processGetUserInfoData
+{
+    NSString *string = [[NSString alloc ] initWithData:dataReceive encoding:NSUTF8StringEncoding];
+    //NSLog(@"processGetUserInfoData:%@", string);
+    SBJsonParser *parser = [[SBJsonParser alloc] init];
+    NSDictionary *dict = [parser objectWithString:string];
+    NSString *name = nil;
+    switch (currentWeiboId) {
+        case Weibo_Sina:
+        case Weibo_Tencent:
+        case Weibo_Netease:
+            name = [dict objectForKey:@"name"];
+            break;
+        case Weibo_Sohu:
+            name = [dict objectForKey:@"screen_name"];
+            break;
+        default:
+            break;
+    }
+    
+    if (name){
+        [WeiboCommon saveWeiboName:name blogId:currentWeiboId];
+        [self notifyGetuserInfoSuccess:name];
+    }else{
+        [self notifyGetUserInfoFailed];
+    }
+    [parser release];
+    [string release];
+}
+
+#pragma mark 发布消息
+- (void)publishMessageWithContent:(NSString *)content andBlogId:(enum WeiboId)weiboId
+{
+    currentRequestId = PublishMessage;
+    currentWeiboId = weiboId;
+    self.stringSendingContent = content;
+    
+    if (!numerousPublish) {
+        NSDictionary *dict = [NSDictionary dictionaryWithObjectsAndKeys:content, @"content", [NSNumber numberWithInt:userData], @"userData",nil];
+        [[NSNotificationCenter defaultCenter] postNotificationName:PublishMessageBeginNotification object:nil userInfo:dict];
+    }
+    
+    NSString *url = nil;
+    NSString *method = @"POST";
+    NSMutableDictionary *parameters = [NSMutableDictionary dictionary];
+    switch (weiboId) {
+        case Weibo_Sina:
+            url = @"http://api.t.sina.com.cn/statuses/update.json";
+            [parameters setObject:content forKey:@"status"];
+            break;
+        case Weibo_Tencent:
+            url = @"http://open.t.qq.com/api/t/add";
+            [parameters setObject:content forKey:@"content"];
+            [parameters setObject:[self getIPAddress] forKey:@"clientip"];
+            [parameters setObject:@"json" forKey:@"format"];
+            break;
+        case Weibo_Netease:
+            url = @"http://api.t.163.com/statuses/update.json";
+            
+            if (self.stringImageUrl) {
+                [parameters setObject:[NSString stringWithFormat:@"%@ %@", stringSendingContent, stringImageUrl] forKey:@"status"];
+            }else {
+                [parameters setObject:content forKey:@"status"];
+            }
+            break;
+        case Weibo_Sohu:
+            url = @"http://api.t.sohu.com/statuses/update.json";
+            [parameters setObject:content forKey:@"status"];
+            break;
+        default:
+            break;
+    }
+    [self initAccessTokenWithBlogId:weiboId];
+    
+    self.connectionWeibo = [MicroBlogRequest asyncRequestWithUrl:url httpMethod:method oauthKey:oauthKey parameters:parameters files:nil delegate:self];
+}
+
+- (void)publishMessageWithContent:(NSString *)content andBlogId:(enum WeiboId)weiboId andImagePath:(NSString *)filePath
+{
+    currentRequestId = PublishMessage;
+    currentWeiboId = weiboId;
+    self.stringSendingContent = content;
+    
+    if (!numerousPublish) {
+        NSDictionary *dict = [NSDictionary dictionaryWithObjectsAndKeys:content, @"content", [NSNumber numberWithInt:userData], @"userData",nil];
+        [[NSNotificationCenter defaultCenter] postNotificationName:PublishMessageBeginNotification object:nil userInfo:dict];
+    }
+    
+    NSString *url = nil;
+    NSString *method = @"POST";
+    NSMutableDictionary *parameters = [NSMutableDictionary dictionary];
+    NSMutableDictionary *fileParameters = [NSMutableDictionary dictionary];
+    switch (weiboId) {
+        case Weibo_Sina:
+            url = @"http://api.t.sina.com.cn/statuses/upload.json";
+            [parameters setObject:content forKey:@"status"];
+            [fileParameters setObject:filePath forKey:@"pic"];
+            break;
+        case Weibo_Tencent:
+            url = @"http://open.t.qq.com/api/t/add_pic";
+            [parameters setObject:content forKey:@"content"];
+            [parameters setObject:[self getIPAddress] forKey:@"clientip"];
+            [parameters setObject:@"json" forKey:@"format"];
+            [fileParameters setObject:filePath forKey:@"pic"];
+            break;
+        case Weibo_Netease:
+            url = @"http://api.t.163.com/statuses/upload.json";
+            [parameters setObject:content forKey:@"status"];
+            [fileParameters setObject:filePath forKey:@"pic"];
+            break;
+        case Weibo_Sohu:
+            url = @"http://api.t.sohu.com/statuses/upload.json";
+            NSString *str = [self urlencode:content];
+            [parameters setObject:str forKey:@"status"];
+//            [parameters setObject:@"  " forKey:@"status"];
+            [fileParameters setObject:filePath forKey:@"pic"];
+            
+            g_isSohuSharingPicture = YES;
+            break;
+        default:
+            break;
+    }
+    [self initAccessTokenWithBlogId:weiboId];
+    
+    self.connectionWeibo = [MicroBlogRequest asyncRequestWithUrl:url httpMethod:method oauthKey:oauthKey parameters:parameters files:fileParameters delegate:self];
+    g_isSohuSharingPicture = NO;
+}
+
+- (BOOL)publishNextWeibo
+{
+    currentWeiboId = [self getNextSendingId];
+    if (currentWeiboId) {
+        if (self.stringFilePath) {
+            [self publishMessageWithContent:self.stringSendingContent andBlogId:currentWeiboId andImagePath:self.stringFilePath];
+        }else {
+            [self publishMessageWithContent:self.stringSendingContent andBlogId:currentWeiboId];
+        }
+        return YES;
+    }else{
+        return NO;
+    }
+}
+
+- (void)notifyPublishMessageFailed
+{
+    NSLog(@"发布到:%d失败", currentWeiboId);
+    NSDictionary *dict = [NSDictionary dictionaryWithObjectsAndKeys:[NSNumber numberWithInt:currentWeiboId], @"weiboid", [NSNumber numberWithBool:NO], @"success", [NSNumber numberWithInt:userData], @"userData", nil];
+    [[NSNotificationCenter defaultCenter] postNotificationName:PublishMessageResultNotification object:nil userInfo:dict];
+    if (delegate && [delegate respondsToSelector:@selector(publishMessageFailed:)]) {
+        [delegate publishMessageFailed:self];
+    }
+    [self publishNextWeibo];
+}
+
+- (void)notifyPublishMessageSuccess
+{
+    NSLog(@"发布到:%d成功", currentWeiboId);
+    NSDictionary *dict = [NSDictionary dictionaryWithObjectsAndKeys:[NSNumber numberWithInt:currentWeiboId], @"weiboid", [NSNumber numberWithBool:YES], @"success", [NSNumber numberWithInt:userData], @"userData", nil];
+    [[NSNotificationCenter defaultCenter] postNotificationName:PublishMessageResultNotification object:nil userInfo:dict];
+    
+    if (delegate && [delegate respondsToSelector:@selector(publishMessageSuccess:)]) {
+        [delegate publishMessageSuccess:self];
+    }
+    BOOL ret = [self publishNextWeibo];
+    if (!ret) {
+        NSDictionary *dict = [NSDictionary dictionaryWithObjectsAndKeys:[NSNumber numberWithInt:Weibo_Max], @"weiboid", [NSNumber numberWithBool:YES], @"success", nil];
+        [[NSNotificationCenter defaultCenter] postNotificationName:PublishMessageResultNotification object:nil userInfo:dict];
+    }
+}
+
+- (void)processPublishMessageData
+{
+    NSString *string = [[NSString alloc ] initWithData:dataReceive encoding:NSUTF8StringEncoding];
+    NSLog(@"processPublishMessageData:%@", string);
+    SBJsonParser *parser = [[SBJsonParser alloc] init];
+    NSDictionary *dict = [parser objectWithString:string];
+    BOOL isSuccess = NO;
+    BOOL shouldDelete = NO;
+    switch (currentWeiboId) {
+        case Weibo_Sina:
+        {
+            NSDictionary *dictUser = [dict objectForKey:@"user"];
+            if (dictUser){
+                [WeiboCommon saveWeiboName:[dictUser objectForKey:@"name"] blogId:currentWeiboId];
+                isSuccess = YES;
+            }else{
+                NSInteger errorCode = [[dict objectForKey:@"error_code"] intValue];
+                if (errorCode == 401) {
+                    //在新浪微博里,401代表用户取消了授权，此时删除新浪微博的资料
+                    shouldDelete = YES;
+                }
+            }
+        }
+            break;
+        case Weibo_Tencent:
+        {
+            NSInteger errorcode = [[dict objectForKey:@"errcode"] intValue];
+            if (errorcode == 0) {
+                isSuccess = YES;
+            }else {
+                NSInteger ret = [[dict objectForKey:@"ret"] intValue];
+                if (ret==3 && errorcode>=1 && errorcode <=4) {
+                    shouldDelete = YES;
+                }
+            }
+        }
+            break;
+        case Weibo_Netease:
+        {
+            NSDictionary *dictUser = [dict objectForKey:@"user"];
+            if (dictUser){
+                [WeiboCommon saveWeiboName:[dictUser objectForKey:@"name"] blogId:currentWeiboId];
+                isSuccess = YES;
+            }else{
+                NSInteger errorCode = [[dict objectForKey:@"error_code"] intValue];
+                if (errorCode>=40104 && errorCode<=40121) {
+                    //在网易微博里,代表用户取消了授权，此时删除新浪微博的资料
+                    shouldDelete = YES;
+                }
+            }
+            //发布图片时返回{"upload_image_url":"http://126.fm/rhBQ5"}
+            if ([dict objectForKey:@"upload_image_url"]) {
+                self.stringImageUrl = [dict objectForKey:@"upload_image_url"];
+                [self publishMessageWithContent:self.stringSendingContent andBlogId:Weibo_Netease];
+                [string release];
+                [parser release];
+                return;
+            }
+        }
+            break;
+        case Weibo_Sohu:
+        {
+            NSDictionary *dictUser = [dict objectForKey:@"user"];
+            if (dictUser){
+                [WeiboCommon saveWeiboName:[dictUser objectForKey:@"screen_name"] blogId:currentWeiboId];
+                isSuccess = YES;
+            }else{
+                NSInteger errorCode = [[dict objectForKey:@"error_code"] intValue];
+                if (errorCode == 401) {
+                    //在sohu微博里,401代表用户取消了授权，此时删除新浪微博的资料
+                    shouldDelete = YES;
+                }
+            }
+        }
+            break;
+        default:
+            break;
+    }
+    
+    if (isSuccess) {
+        [self notifyPublishMessageSuccess];
+    }else{
+        [self notifyPublishMessageFailed];
+    }
+    if (shouldDelete) {
+        [WeiboCommon deleteWeiboInfo:currentWeiboId];
+    }
+    [parser release];
+    [string release];
+}
+
+#pragma mark NSURLConnectionDelegate
+- (void)connection:(NSURLConnection *)connection didFailWithError:(NSError *)error
+{
+    switch (currentRequestId) {
+        case GettingOauthToken:
+            [self notifyGetOauthTokenFailed];
+            break;
+        case GettingAccessToken:
+            [self notifyGetAccessTokenFailed];
+            break;
+        case GettingUserInfo:
+            [self notifyGetUserInfoFailed];
+            break;
+        case PublishMessage:
+            [self notifyPublishMessageFailed];
+            break;
+        default:
+            break;
+    }
+}
+
+- (void)connection:(NSURLConnection *)connection didReceiveResponse:(NSURLResponse *)response
+{
+    self.dataReceive = nil;
+    dataReceive = [[NSMutableData alloc] init];
+}
+
+- (void)connection:(NSURLConnection *)connection didReceiveData:(NSData *)data
+{
+    [self.dataReceive appendData:data];
+}
+
+- (void)connectionDidFinishLoading:(NSURLConnection *)connection
+{
+    switch (currentRequestId) {
+        case GettingOauthToken:
+            [self performSelectorOnMainThread:@selector(processOauthTokenData) withObject:nil waitUntilDone:NO];
+            break;
+        case GettingAccessToken:
+            [self performSelectorOnMainThread:@selector(processAccessTokenData) withObject:nil waitUntilDone:NO];
+            break;
+        case GettingUserInfo:
+            [self performSelectorOnMainThread:@selector(processGetUserInfoData) withObject:nil waitUntilDone:NO];
+            break;
+        case PublishMessage:
+            [self performSelectorOnMainThread:@selector(processPublishMessageData) withObject:nil waitUntilDone:NO];
+            break;
+        default:
+            break;
+    }
+}
+
+- (NSInteger)getNextSendingId
+{
+    if (!numerousPublish) {
+        return 0;
+    }
+    if (currentWeiboId == 0) {
+        currentWeiboId = Weibo_Sina;
+    }else{
+        currentWeiboId = currentWeiboId*2;
+    }
+    int i;
+    for (i = currentWeiboId; i<Weibo_Max; i=i*2) {
+        //检查是否已绑定，并且打开开关
+        if ([WeiboCommon getWeiboEnabledWithWeiboId:i] && [WeiboCommon checkHasBindingById:i]) {
+            break;
+        }
+    }
+    return (i<Weibo_Max)?i:0;
+}
+
+#pragma mark 多个微博发布API
+- (BOOL)publishMessageWithContent:(NSString*)content andImagePath:(NSString *)imagePath
+{
+    self.numerousPublish = YES;
+    self.stringSendingContent = nil;
+    stringSendingContent = [[NSString alloc] initWithString:content];
+    self.stringFilePath = nil;
+    if (imagePath) {
+        stringFilePath = [[NSString alloc] initWithString:imagePath];
+    }
+    
+    currentWeiboId = 0;
+    
+    //发布Notification
+    /*
+    NSDictionary *dict = [NSDictionary dictionaryWithObjectsAndKeys:content, @"content", imagePath, @"imagePath", nil];
+    [[NSNotificationCenter defaultCenter] postNotificationName:PublishMessageBeginNotification object:nil userInfo:dict];
+    */
+    
+    return [self publishNextWeibo];
+}
+
+
+//urlencode{
+- (NSString *)urlencode:(NSString *)str {
+    NSMutableString *output = [NSMutableString string];
+    const unsigned char *source = (const unsigned char *)[str UTF8String];
+    int sourceLen = strlen((const char *)source);
+    for (int i = 0; i < sourceLen; ++i) {
+        const unsigned char thisChar = source[i];
+        if (thisChar == ' '){
+            [output appendString:@"+"];
+        } else if (thisChar == '.' || thisChar == '-' || thisChar == '_' || thisChar == '~' || 
+                   (thisChar >= 'a' && thisChar <= 'z') ||
+                   (thisChar >= 'A' && thisChar <= 'Z') ||
+                   (thisChar >= '0' && thisChar <= '9')) {
+            [output appendFormat:@"%c", thisChar];
+        } else {
+            [output appendFormat:@"%%%02X", thisChar];
+        }
+    }
+    return output;
+}
+
+
+
+@end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
